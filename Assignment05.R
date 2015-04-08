@@ -60,3 +60,67 @@ table(test$Vandal)
 618/(618+545)
 
 ## 1.6
+library(rpart)
+library(rpart.plot)
+
+vanCART = rpart(Vandal ~ ., data=train, method="class")
+prp(vanCART) # 
+
+predCART = predict(vanCART, newdata=test, type="class")
+t = table(test$Vandal, predCART)
+t
+(618+12)/(618+12+533)
+
+## 2.1
+
+wikiWords2 = wikiWords #According to assignment text, makes a copy (not a reference)
+
+wikiWords2$HTTP = ifelse(grepl("http",wiki$Added,fixed=TRUE), 1, 0)
+
+nrow(subset(wikiWords2, wikiWords2$HTTP==TRUE))
+
+(609+57)/sum(t)
+
+
+wikiWords2$NumWordsAdded = rowSums(as.matrix(dtmAdded))
+wikiWords2$NumWordsRemoved = rowSums(as.matrix(dtmRemoved))
+mean(wikiWords2$NumWordsAdded)
+
+wikiTrain2 = subset(wikiWords2, split==TRUE)
+wikiTest2 = subset(wikiWords2, split==FALSE)
+
+vanCART = rpart(Vandal ~ ., data=wikiTrain2, method="class")
+prp(vanCART) # 
+
+predCART = predict(vanCART, newdata=wikiTest2, type="class")
+t = table(wikiTest2$Vandal, predCART)
+t
+(514+248)/sum(t)
+
+##3.1
+
+wikiWords3 = wikiWords2
+wikiWords3$Minor = wiki$Minor
+wikiWords3$Loggedin = wiki$Loggedin
+
+
+wikiTrain3 = subset(wikiWords3, split==TRUE)
+wikiTest3 = subset(wikiWords3, split==FALSE)
+
+vanCART = rpart(Vandal ~ ., data=wikiTrain3, method="class")
+prp(vanCART) # 
+
+predCART = predict(vanCART, newdata=wikiTest3, type="class")
+t = table(wikiTest3$Vandal, predCART)
+t
+(t[1,1]+t[2,2])/sum(t)
+
+## Part 2 -- AUTOMATING REVIEWS IN MEDICINE
+
+
+setwd("C:/C/Education/edX MIT 15.071 - The Analytics Edge/Unit 05 Data Files")
+getwd()
+
+trials = read.csv("clinical_trial.csv")
+str(trials)
+
