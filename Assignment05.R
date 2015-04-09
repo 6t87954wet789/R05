@@ -121,6 +121,57 @@ t
 setwd("C:/C/Education/edX MIT 15.071 - The Analytics Edge/Unit 05 Data Files")
 getwd()
 
-trials = read.csv("clinical_trial.csv")
+trials = read.csv("clinical_trial.csv", stringsAsFactors=FALSE)
 str(trials)
+summary(trials)
+
+nchar(trials$abstract)
+max(nchar(trials$abstract))
+
+nrow(subset(trials, nchar(trials$abstract)==0))
+
+subset(trials, nchar(trials$title)==min(nchar(trials$title)))$title
+
+##2.1
+
+library(tm)
+library(SnowballC)
+
+length(stopwords("english")) #174 ==> OK
+corpusTitle = Corpus(VectorSource(trials$title))
+corpusAbstract = Corpus(VectorSource(trials$abstract))
+corpusTitle = tm_map(corpusTitle, tolower)
+corpusAbstract = tm_map(corpusAbstract, tolower)
+corpusTitle = tm_map(corpusTitle, PlainTextDocument)
+corpusAbstract = tm_map(corpusAbstract, PlainTextDocument)
+corpusTitle = tm_map(corpusTitle, removePunctuation)
+corpusAbstract = tm_map(corpusAbstract, removePunctuation)
+corpusTitle = tm_map(corpusTitle, removeWords, stopwords("english"))
+corpusAbstract = tm_map(corpusAbstract, removeWords, stopwords("english"))
+corpusTitle = tm_map(corpusTitle, stemDocument)
+corpusAbstract = tm_map(corpusAbstract, stemDocument)
+dtmTitle = DocumentTermMatrix(corpusTitle)
+dtmTitle
+dtmAbstract = DocumentTermMatrix(corpusAbstract)
+dtmAbstract
+
+sparseTitle = removeSparseTerms(dtmTitle, 0.95)	
+sparseTitle
+sparseAbstract = removeSparseTerms(dtmAbstract, 0.95)	
+sparseAbstract
+
+dtmTitle = as.data.frame(as.matrix(sparseTitle))
+dtmAbstract = as.data.frame(as.matrix(sparseAbstract))
+
+tapply(dtmAbstract, colSums)
+max(colSums(dtmAbstract))
+
+wCount = colSums(dtmAbstract)
+sort(wCount)
+
+##3.1 Building a model
+
+
+library(rpart)
+library(rpart.plot)
 
