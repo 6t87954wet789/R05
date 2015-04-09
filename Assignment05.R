@@ -170,8 +170,90 @@ wCount = colSums(dtmAbstract)
 sort(wCount)
 
 ##3.1 Building a model
+colnames(dtmTitle) = paste0("T", colnames(dtmTitle))
+colnames(dtmAbstract) = paste0("A", colnames(dtmAbstract))
+str(dtmTitle)
+
+dtm = cbind(dtmTitle, dtmAbstract)
+dtm$trial = trials$trial
+ncol(dtm)
 
 
 library(rpart)
 library(rpart.plot)
+library(caTools)
 
+set.seed(144)
+split = sample.split(dtm$trial, SplitRatio = 0.7)
+train = subset(dtm, split==TRUE)
+test = subset(dtm, split==FALSE)
+
+table(train$trial)
+730/(730 +572)
+
+triCART = rpart(trial ~ ., data=train, method="class")
+prp(triCART) # first split is Tphase (title contains "phase")
+
+#on training set, find max predicted probability
+predCART = predict(triCART, newdata=train)
+predCART = predCART[,2]
+max(predCART)
+
+#3.7
+#Still evaluating on training set
+predCART = predict(triCART, newdata=train, type="class")
+t = table(train$trial, predCART)
+t
+TP = t[2,2]
+TN = t[1,1]
+FP = t[1,2]	
+FN = t[2,1]
+
+(TP+TN)/sum(t)	#accuracy
+TP/(TP+FN)		#sensitivity
+TN/(TN+FP)		#specificity
+
+#4.1 Evaluate on Testing set
+
+predCART = predict(triCART, newdata=test, type="class")
+t = table(test$trial, predCART)
+t
+TP = t[2,2]
+TN = t[1,1]
+FP = t[1,2]	
+FN = t[2,1]
+
+(TP+TN)/sum(t)	#accuracy
+TP/(TP+FN)		#sensitivity
+TN/(TN+FP)		#specificity
+
+library(ROCR)
+predCART = predict(triCART, newdata=test)	#not "class" --> need numerical probabilities for ROCR curve
+predCART = predCART[,2]
+ROCRpred = prediction(predCART, test$trial)
+auc = as.numeric(performance(ROCRpred, "auc")@y.values)
+auc	#
+
+#Just doublechecking I understand with the numerical probs.
+t = table(test$trial, predCART > 0.5)	
+t
+TP = t[2,2]
+TN = t[1,1]
+FP = t[1,2]	
+FN = t[2,1]
+
+(TP+TN)/sum(t)	#accuracy
+TP/(TP+FN)		#sensitivity
+TN/(TN+FP)		#specificity
+#Yep. Phew.
+
+## Problem 5: DECISION-MAKER TRADEOFFS
+
+##Just conceptual problems. Done Part 2 of assignment
+
+### END OF PART 2
+
+## Part 3  -- SEPARATING SPAM FROM HAM (PART 1)
+
+setwd("C:/C/Education/edX MIT 15.071 - The Analytics Edge/Unit 05 Data Files")
+getwd()
