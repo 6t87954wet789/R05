@@ -257,3 +257,155 @@ TN/(TN+FP)		#specificity
 
 setwd("C:/C/Education/edX MIT 15.071 - The Analytics Edge/Unit 05 Data Files")
 getwd()
+
+emails = read.csv("emails.csv", stringsAsFactors = FALSE)	#text analytics ==> FALSE
+str(emails)
+sum(emails$spam)
+
+head(emails$text, 10)
+max(nchar(emails$text))
+min(nchar(emails$text))
+
+subset(emails, min(nchar(emails$text)) == nchar(emails$text))
+
+#2.1
+
+library(tm)
+library(SnowballC)
+
+length(stopwords("english")) #174 ==> OK
+
+corpus = Corpus(VectorSource(emails$text))
+corpus = tm_map(corpus, tolower)
+corpus = tm_map(corpus, PlainTextDocument) #Seemingly important: Always after tolower, but before other cleaning steps
+corpus = tm_map(corpus, removePunctuation)
+corpus = tm_map(corpus, removeWords, stopwords("english"))
+corpus = tm_map(corpus, stemDocument)
+
+dtm = DocumentTermMatrix(corpus)
+dtm
+
+spdtm = removeSparseTerms(dtm, 0.95)	
+spdtm
+
+emailsSparse = as.data.frame(as.matrix(spdtm))
+colnames(emailsSparse) = make.names(colnames(emailsSparse))	# Important! Always do this - some terms might not be valid variable names in R (ie start with number).
+
+sort(colSums(emailsSparse))
+which.max(colSums(emailsSparse))
+
+#2.4
+
+emailsSparse$spam = emails$spam
+
+hamonly = subset(emailsSparse, emailsSparse$spam==0)
+hamwords = colSums(hamonly)
+subset(hamwords, as.numeric(hamwords)>5000)
+length(subset(hamwords, as.numeric(hamwords)>5000))
+
+spamonly = subset(emailsSparse, emailsSparse$spam==1)
+spamwords = colSums(spamonly)
+subset(spamwords, as.numeric(spamwords)>=1000)
+subset(spamwords, as.numeric(spamwords)>=1000 & names(spamwords) != "spam")
+length(subset(spamwords, as.numeric(spamwords)>=1000 & names(spamwords) != "spam"))
+
+#3.1
+
+emailsSparse$spam = as.factor(emailsSparse$spam)
+set.seed(123)
+split = sample.split(emailsSparse$spam, SplitRatio = 0.7)
+train = subset(emailsSparse, split==TRUE)
+test = subset(emailsSparse, split==FALSE)
+
+spamLog = glm(spam ~ . , data=train, family=binomial)
+predictLog = predict(spamLog, newdata=train, type="response")
+tLog = table(train$spam, predictLog > 0.5)
+tLog
+AccuracyLog = (tLog[1,1] + tLog[2,2]) / sum(tLog)
+AccuracyLog
+
+set.seed(123)
+spamCART = rpart(spam ~ ., data=train, method="class")
+prp(spamCART)
+
+library(randomForest)
+set.seed(123)
+spamRF = randomForest(spam ~ . , data = train)
+
+length(subset(predictLog, as.numeric(predictLog) < 0.00001))
+length(subset(predictLog, as.numeric(predictLog) > 0.99999))
+length(subset(predictLog, as.numeric(predictLog) <= 0.99999 & as.numeric(predictLog) >= 0.00001))
+length(predictLog)
+
+summary(spamLog)
+prp(spamCART)
+
+tLog = table(train$spam, predictLog > 0.5)
+tLog
+AccuracyLog = (tLog[1,1] + tLog[2,2]) / sum(tLog)
+AccuracyLog
+
+ROCRpred = prediction(predictLog, train$spam)
+auc = as.numeric(performance(ROCRpred, "auc")@y.values)
+auc
+
+predCART = predict(spamCART, newdata=train)
+tCART = table(train$spam, predCART)
+tCART
+TP = tCART[2,2]
+TN = tCART[1,1]
+FP = tCART[1,2]	
+FN = tCART[2,1]
+
+(TP+TN)/sum(tCART)	#accuracy
+TP/(TP+FN)		#sensitivity
+TN/(TN+FP)		#specificity
+
+predCART = predict(spamCART, newdata=train)	#numeric probabilities
+predCART = predCART[,2]
+ROCRpred = prediction(predCART, train$spam)
+auc = as.numeric(performance(ROCRpred, "auc")@y.values)
+auc	#
+
+predRF = predict(spamRF, newdata=train)	
+tRF = table(train$spam, predRF)
+tRF
+TP = tRF[2,2]
+TN = tRF[1,1]
+FP = tRF[1,2]	
+FN = tRF[2,1]
+
+
+(TP+TN)/sum(tRF)	#accuracy
+TP/(TP+FN)		#sensitivity
+TN/(TN+FP)		#specificity
+
+predRF = predict(spamRF, newdata=train, type = "prob")	#numeric
+predRF = predRF[,2]
+tRF = table(train$spam, predRF > 0.5)
+tRF
+TP = tRF[2,2]
+TN = tRF[1,1]
+FP = tRF[1,2]	
+FN = tRF[2,1]
+
+(TP+TN)/sum(tRF)	#accuracy
+TP/(TP+FN)		#sensitivity
+TN/(TN+FP)		#specificity
+
+ROCRpred = prediction(predRF, train$spam)
+auc = as.numeric(performance(ROCRpred, "auc")@y.values)
+auc	#
+
+#4.1 - Evaluating on test set
+
+predictLog = predict(spamLog, newdata=test, type="response")
+tLog = table(test$spam, predictLog > 0.5)
+tLog
+AccuracyLog = (tLog[1,1] + tLog[2,2]) / sum(tLog)
+AccuracyLog
+
+ROCRpred = prediction(predictLog, test$spam)
+auc = as.numeric(performance(ROCRpred, "auc")@y.values)
+auc
+
