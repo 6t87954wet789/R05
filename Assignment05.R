@@ -409,3 +409,39 @@ ROCRpred = prediction(predictLog, test$spam)
 auc = as.numeric(performance(ROCRpred, "auc")@y.values)
 auc
 
+
+predCART = predict(spamCART, newdata=test)
+predCART = predCART[,2]
+tCART = table(test$spam, predCART > 0.5)
+tCART
+TP = tCART[2,2]
+TN = tCART[1,1]
+FP = tCART[1,2]	
+FN = tCART[2,1]
+
+(TP+TN)/sum(tCART)	#accuracy
+TP/(TP+FN)		#sensitivity
+TN/(TN+FP)		#specificity
+
+ROCRpred = prediction(predCART, test$spam)
+auc = as.numeric(performance(ROCRpred, "auc")@y.values)
+auc	#
+
+
+
+predRF = predict(spamRF, newdata=test, type = "prob")	#numeric
+predRF = predRF[,2]
+tRF = table(test$spam, predRF > 0.5)
+tRF
+TP = tRF[2,2]
+TN = tRF[1,1]
+FP = tRF[1,2]	
+FN = tRF[2,1]
+
+(TP+TN)/sum(tRF)	#accuracy
+TP/(TP+FN)		#sensitivity
+TN/(TN+FP)		#specificity
+
+ROCRpred = prediction(predRF, test$spam)
+auc = as.numeric(performance(ROCRpred, "auc")@y.values)
+auc	#
